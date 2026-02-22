@@ -7,11 +7,13 @@ export class ClientEntity implements Client {
   position: { x: number; y: number };
   targetPosition: { x: number; y: number };
   state: 'idle' | 'waiting' | 'leaving' = 'idle';
+  createdAt: number;
 
   constructor(config: ClientConfig, x: number, y: number) {
     this.config = config;
     this.position = { x, y };
     this.targetPosition = { x, y };
+    this.createdAt = Date.now();
   }
 
   createTask(type: ProductType, duration: number): Task | null {

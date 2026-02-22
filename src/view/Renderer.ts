@@ -15,14 +15,21 @@ export class Renderer {
     this.canvas = document.createElement('canvas');
     this.width = 1200;
     this.height = 800;
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
+
+    // HiDPI Scaling
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.width = this.width * dpr;
+    this.canvas.height = this.height * dpr;
+    this.canvas.style.width = `${this.width}px`;
+    this.canvas.style.height = `${this.height}px`;
+
     // Shadow for depth
     this.canvas.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
     this.canvas.style.borderRadius = '12px';
     container.appendChild(this.canvas);
 
     this.ctx = this.canvas.getContext('2d')!;
+    this.ctx.scale(dpr, dpr); // Scale context to match dpr
   }
 
   clear() {
@@ -190,7 +197,13 @@ export class Renderer {
     // Client Info (Left)
     this.ctx.fillStyle = THEME.text.primary;
     this.ctx.font = 'bold 16px Arial';
-    this.ctx.fillText(client.config.id, x + 20, y + 35);
+    this.ctx.fillText(client.config.id, x + 20, y + 25);
+
+    // Time Active
+    const elapsed = Math.floor((Date.now() - client.createdAt) / 1000);
+    this.ctx.fillStyle = THEME.text.secondary;
+    this.ctx.font = '11px Arial';
+    this.ctx.fillText(`${elapsed}s`, x + 20, y + 45);
 
     // Priority Badges (Right of Name) - Fixed Overlap
     let badgeX = x + 100;
@@ -254,6 +267,11 @@ export class Renderer {
         this.ctx.fillStyle = THEME.task.warning;
         this.ctx.font = 'bold 12px Arial';
         this.ctx.fillText('!', taskX + 20, y + 15);
+
+        // Draw warning border
+        this.ctx.strokeStyle = THEME.task.warning;
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(taskX, y + 20, 30, 20);
       }
     });
   }
