@@ -35,6 +35,7 @@ export interface Client {
 
 export interface Worker {
   id: string;
+  supportedType: ProductType;
   currentTask: Task | null;
   status: 'idle' | 'working';
   position: { x: number; y: number };

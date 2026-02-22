@@ -12,11 +12,15 @@ export class RiverFactory {
 
   initWorkers() {
     for (let i = 0; i < this.maxConcurrency; i++) {
+      // Split workers: First half IMG, second half VID
+      const type = i < this.maxConcurrency / 2 ? 'image' : 'video';
+      
       this.workers.push({
-        id: `worker-${i}`,
+        id: `W-${i} [${type.toUpperCase().substr(0, 3)}]`,
+        supportedType: type,
         currentTask: null,
         status: 'idle',
-        position: { x: 0, y: 0 } // Will be set by renderer layout
+        position: { x: 0, y: 0 }
       });
     }
   }
@@ -39,17 +43,28 @@ export class RiverFactory {
     const currentTime = Date.now();
     this.checkTimeouts(currentTime);
 
-    // Assign tasks to idle workers
+    // Assign tasks to compatible idle workers
     const idleWorkers = this.workers.filter(w => w.status === 'idle');
     
-    while (idleWorkers.length > 0 && this.queue.length > 0) {
-      const worker = idleWorkers.pop()!;
-      const task = this.queue.shift()!;
+    // We need to match tasks to compatible workers
+    // This simple loop might be inefficient but works for small numbers
+    for (let i = 0; i < idleWorkers.length; i++) {
+      const worker = idleWorkers[i];
       
-      worker.currentTask = task;
-      worker.status = 'working';
-      task.status = 'processing';
-      task.startedAt = currentTime;
+      // Find the first task in queue that matches this worker's type
+      // Note: This naive approach might skip a high priority VIP of one type 
+      // if we process workers in a fixed order. 
+      // Ideally, we should iterate tasks and find a worker, but this is a demo.
+      const taskIndex = this.queue.findIndex(t => t.type === worker.supportedType);
+      
+      if (taskIndex !== -1) {
+        const task = this.queue.splice(taskIndex, 1)[0];
+        
+        worker.currentTask = task;
+        worker.status = 'working';
+        task.status = 'processing';
+        task.startedAt = currentTime;
+      }
     }
 
     // Process active tasks

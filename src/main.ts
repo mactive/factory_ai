@@ -11,11 +11,33 @@ if (app) {
   app.style.justifyContent = 'center';
   app.style.alignItems = 'center';
   app.style.height = '100vh';
-  app.style.backgroundColor = '#1a1a1a';
+  app.style.backgroundColor = '#f0f4f8';
+  app.style.flexDirection = 'column';
 }
 
+// UI Controls
+const controls = document.createElement('div');
+controls.style.marginBottom = '20px';
+controls.style.color = '#2c3e50';
+controls.style.fontFamily = 'Arial';
+controls.innerHTML = `
+  <label for="spawnRate">Spawn Rate (ms): </label>
+  <input type="range" id="spawnRate" min="200" max="5000" step="100" value="2000">
+  <span id="spawnValue">2000ms</span>
+`;
+app?.insertBefore(controls, app.firstChild);
+
+const spawnInput = document.getElementById('spawnRate') as HTMLInputElement;
+const spawnValue = document.getElementById('spawnValue');
+
+spawnInput.addEventListener('input', (e) => {
+  const val = parseInt((e.target as HTMLInputElement).value);
+  spawner.setSpawnInterval(val);
+  if (spawnValue) spawnValue.textContent = `${val}ms`;
+});
+
 const renderer = new Renderer('app');
-const factory = new RiverFactory(20);
+const factory = new RiverFactory(8);
 const spawner = new Spawner();
 const clients: ClientEntity[] = [];
 
@@ -28,15 +50,20 @@ function gameLoop(timestamp: number) {
   // 1. Spawn new clients
   const newClient = spawner.update(deltaTime);
   if (newClient) {
-    // Generate a task immediately for the demo
-    const isVideo = Math.random() > 0.8; // 20% video tasks
-    const type = isVideo ? 'video' : 'image';
-    const duration = isVideo ? 120000 : 10000; // 2min or 10s
+    // Generate 1-5 tasks for the client
+    const taskCount = Math.floor(Math.random() * 5) + 1;
 
-    newClient.createTask(type, duration);
+    for (let i = 0; i < taskCount; i++) {
+      const isVideo = Math.random() > 0.8; // 20% video tasks
+      const type = isVideo ? 'video' : 'image';
+      const duration = isVideo ? 10000 : 2000; // 10s or 2s
+
+      newClient.createTask(type, duration);
+    }
+
     clients.push(newClient);
 
-    // Add task to factory queue
+    // Add tasks to factory queue
     newClient.tasks.forEach(task => {
       if (task.status === 'pending') {
         factory.addTask(task);
@@ -61,7 +88,7 @@ function gameLoop(timestamp: number) {
   // 4. Render
   renderer.clear();
   renderer.drawFactory(factory);
-  renderer.drawQueue(factory.queue);
+  renderer.drawClients(clients);
 
   requestAnimationFrame(gameLoop);
 }

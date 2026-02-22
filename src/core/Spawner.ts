@@ -3,7 +3,11 @@ import { ProductType, Priority } from '../types';
 
 export class Spawner {
   spawnTimer: number = 0;
-  spawnInterval: number = 2000; // 2 seconds
+  spawnInterval: number = 2000; // Default 2 seconds
+
+  setSpawnInterval(interval: number) {
+    this.spawnInterval = interval;
+  }
 
   update(deltaTime: number): ClientEntity | null {
     this.spawnTimer += deltaTime;
@@ -14,13 +18,26 @@ export class Spawner {
     return null;
   }
 
+  generateClientId(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+    let id = '';
+    for (let i = 0; i < 4; i++) {
+      id += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    for (let i = 0; i < 2; i++) {
+      id += digits.charAt(Math.floor(Math.random() * digits.length));
+    }
+    return id;
+  }
+
   createRandomClient(): ClientEntity {
     const isL2 = Math.random() > 0.7;
     const hasVip = Math.random() > 0.8;
     const priority: Priority = isL2 ? 'L2' : 'L1';
 
     const config = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: this.generateClientId(),
       priority,
       hasVip,
       budget: Math.floor(Math.random() * 1000) + 100,

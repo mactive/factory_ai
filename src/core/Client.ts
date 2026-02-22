@@ -15,9 +15,8 @@ export class ClientEntity implements Client {
   }
 
   createTask(type: ProductType, duration: number): Task | null {
-    if (this.activeTasks >= this.config.maxConcurrency) {
-      return null;
-    }
+    // Removed strict concurrency check here to allow queueing multiple tasks
+    // Concurrency is handled by the Factory/Scheduler
 
     const task: Task = {
       id: Math.random().toString(36).substr(2, 9),
