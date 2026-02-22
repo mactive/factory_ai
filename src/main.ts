@@ -24,11 +24,65 @@ controls.innerHTML = `
   <label for="spawnRate">Spawn Rate (ms): </label>
   <input type="range" id="spawnRate" min="200" max="5000" step="100" value="2000">
   <span id="spawnValue">2000ms</span>
+  
+  <div style="margin-top: 10px; display: flex; gap: 20px;">
+    <div>
+      <span>Image Workers: </span>
+      <button id="addImgBtn" style="padding: 5px 10px; cursor: pointer;">+</button>
+      <button id="removeImgBtn" style="padding: 5px 10px; cursor: pointer;">-</button>
+      <span id="imgCount">4</span>
+    </div>
+    <div>
+      <span>Video Workers: </span>
+      <button id="addVidBtn" style="padding: 5px 10px; cursor: pointer;">+</button>
+      <button id="removeVidBtn" style="padding: 5px 10px; cursor: pointer;">-</button>
+      <span id="vidCount">4</span>
+    </div>
+  </div>
 `;
 app?.insertBefore(controls, app.firstChild);
 
 const spawnInput = document.getElementById('spawnRate') as HTMLInputElement;
 const spawnValue = document.getElementById('spawnValue');
+
+// Worker Controls
+const addImgBtn = document.getElementById('addImgBtn');
+const removeImgBtn = document.getElementById('removeImgBtn');
+const imgCountSpan = document.getElementById('imgCount');
+
+const addVidBtn = document.getElementById('addVidBtn');
+const removeVidBtn = document.getElementById('removeVidBtn');
+const vidCountSpan = document.getElementById('vidCount');
+
+const factory = new RiverFactory(8); // This value is now dynamic
+
+function updateWorkerCounts() {
+  const imgCount = factory.workers.filter(w => w.supportedType === 'image').length;
+  const vidCount = factory.workers.filter(w => w.supportedType === 'video').length;
+
+  if (imgCountSpan) imgCountSpan.textContent = imgCount.toString();
+  if (vidCountSpan) vidCountSpan.textContent = vidCount.toString();
+}
+
+addImgBtn?.addEventListener('click', () => {
+  factory.addWorker('image');
+  updateWorkerCounts();
+});
+
+removeImgBtn?.addEventListener('click', () => {
+  factory.removeWorker('image');
+  updateWorkerCounts();
+});
+
+addVidBtn?.addEventListener('click', () => {
+  factory.addWorker('video');
+  updateWorkerCounts();
+});
+
+removeVidBtn?.addEventListener('click', () => {
+  factory.removeWorker('video');
+  updateWorkerCounts();
+});
 
 spawnInput.addEventListener('input', (e) => {
   const val = parseInt((e.target as HTMLInputElement).value);
@@ -36,8 +90,10 @@ spawnInput.addEventListener('input', (e) => {
   if (spawnValue) spawnValue.textContent = `${val}ms`;
 });
 
+// Update counts on init
+updateWorkerCounts();
+
 const renderer = new Renderer('app');
-const factory = new RiverFactory(8);
 const spawner = new Spawner();
 const clients: ClientEntity[] = [];
 

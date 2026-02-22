@@ -119,16 +119,39 @@ export class Renderer {
     this.ctx.fillRect(50, 50, 500, 700); // Background
     this.ctx.strokeRect(50, 50, 500, 700);
 
+    // Header
     this.ctx.fillStyle = THEME.text.primary;
     this.ctx.font = 'bold 24px "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
     this.ctx.fillText(`Active Clients (${clients.length})`, 70, 90);
+
+    // Legend
+    const legendY = 710;
+    this.ctx.font = '12px Arial';
+
+    // Pending
+    this.ctx.fillStyle = '#bdc3c7'; // Grey
+    this.ctx.beginPath(); this.ctx.arc(70, legendY, 5, 0, Math.PI * 2); this.ctx.fill();
+    this.ctx.fillStyle = THEME.text.secondary;
+    this.ctx.fillText('Pending', 80, legendY + 4);
+
+    // Processing
+    this.ctx.fillStyle = '#f1c40f'; // Yellow (Active)
+    this.ctx.beginPath(); this.ctx.arc(150, legendY, 5, 0, Math.PI * 2); this.ctx.fill();
+    this.ctx.fillStyle = THEME.text.secondary;
+    this.ctx.fillText('Processing', 160, legendY + 4);
+
+    // Completed
+    this.ctx.fillStyle = '#2ecc71'; // Green (Done)
+    this.ctx.beginPath(); this.ctx.arc(240, legendY, 5, 0, Math.PI * 2); this.ctx.fill();
+    this.ctx.fillStyle = THEME.text.secondary;
+    this.ctx.fillText('Done', 250, legendY + 4);
 
     // Draw clients list
     clients.forEach((client, i) => {
       const x = 70;
       const y = 120 + i * 70; // Increased spacing
 
-      if (y < 730) { // Simple culling
+      if (y < 680) { // Adjusted culling for legend space
         this.drawClientRow(client, x, y);
       }
     });
@@ -140,19 +163,34 @@ export class Renderer {
     this.ctx.strokeStyle = '#e9ecef';
     this.ctx.lineWidth = 1;
 
-    // VIP styling
+    // VIP styling (Border)
     if (client.config.hasVip) {
       this.ctx.strokeStyle = '#f1c40f';
-      this.ctx.lineWidth = 2;
+      this.ctx.lineWidth = 3; // Thicker border for VIP
     }
 
     this.ctx.fillRect(x, y, 460, 60);
     this.ctx.strokeRect(x, y, 460, 60);
 
+    // Status Indicator (Left Bar)
+    const hasActive = client.tasks.some(t => t.status === 'processing');
+    const allDone = client.tasks.every(t => t.status === 'completed');
+
+    if (hasActive) {
+      this.ctx.fillStyle = '#f1c40f'; // Active Yellow
+      this.ctx.fillRect(x, y, 5, 60);
+    } else if (allDone) {
+      this.ctx.fillStyle = '#2ecc71'; // Done Green
+      this.ctx.fillRect(x, y, 5, 60);
+    } else {
+      this.ctx.fillStyle = '#bdc3c7'; // Pending Grey (Waiting)
+      this.ctx.fillRect(x, y, 5, 60);
+    }
+
     // Client Info (Left)
     this.ctx.fillStyle = THEME.text.primary;
     this.ctx.font = 'bold 16px Arial';
-    this.ctx.fillText(client.config.id, x + 15, y + 35);
+    this.ctx.fillText(client.config.id, x + 20, y + 35);
 
     // Priority Badges (Right of Name) - Fixed Overlap
     let badgeX = x + 100;
@@ -183,7 +221,7 @@ export class Renderer {
 
     // Tasks Info (Far Right)
     client.tasks.forEach((task, index) => {
-      const taskX = x + 200 + index * 60;
+      const taskX = x + 200 + index * 35; // Tighter spacing
 
       // Task Box
       const taskColor = task.type === 'image' ? THEME.task.image : THEME.task.video;
@@ -193,20 +231,29 @@ export class Renderer {
 
       this.ctx.fillStyle = taskColor;
       this.ctx.beginPath();
-      this.ctx.roundRect(taskX, y + 15, 50, 30, 6);
+      this.ctx.roundRect(taskX, y + 20, 30, 20, 4); // Smaller boxes
       this.ctx.fill();
       this.ctx.globalAlpha = 1.0;
 
       this.ctx.fillStyle = '#fff';
-      this.ctx.font = 'bold 11px Arial';
+      this.ctx.font = 'bold 9px Arial'; // Smaller font
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(task.type === 'image' ? 'IMG' : 'VID', taskX + 25, y + 34);
+      this.ctx.fillText(task.type === 'image' ? 'IMG' : 'VID', taskX + 15, y + 33);
       this.ctx.textAlign = 'left';
+
+      // Status dot overlay
+      if (task.status === 'processing') {
+        this.ctx.fillStyle = '#f1c40f'; // Yellow
+        this.ctx.beginPath(); this.ctx.arc(taskX + 26, y + 20, 3, 0, Math.PI * 2); this.ctx.fill();
+      } else if (task.status === 'completed') {
+        this.ctx.fillStyle = '#2ecc71'; // Green
+        this.ctx.beginPath(); this.ctx.arc(taskX + 26, y + 20, 3, 0, Math.PI * 2); this.ctx.fill();
+      }
 
       if (task.isWarning) {
         this.ctx.fillStyle = THEME.task.warning;
-        this.ctx.font = 'bold 16px Arial';
-        this.ctx.fillText('!', taskX + 40, y + 12);
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.fillText('!', taskX + 20, y + 15);
       }
     });
   }

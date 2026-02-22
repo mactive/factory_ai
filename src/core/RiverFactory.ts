@@ -11,17 +11,41 @@ export class RiverFactory {
   }
 
   initWorkers() {
-    for (let i = 0; i < this.maxConcurrency; i++) {
-      // Split workers: First half IMG, second half VID
-      const type = i < this.maxConcurrency / 2 ? 'image' : 'video';
-      
-      this.workers.push({
-        id: `W-${i} [${type.toUpperCase().substr(0, 3)}]`,
-        supportedType: type,
-        currentTask: null,
-        status: 'idle',
-        position: { x: 0, y: 0 }
-      });
+    // Initial: 4 IMG, 4 VID
+    for (let i = 0; i < 4; i++) this.addWorker('image');
+    for (let i = 0; i < 4; i++) this.addWorker('video');
+  }
+
+  addWorker(type: 'image' | 'video') {
+    const id = Math.random().toString(36).substr(2, 4).toUpperCase();
+    const typeLabel = type === 'image' ? 'IMG' : 'VID';
+    
+    this.workers.push({
+      id: `W-${id} [${typeLabel}]`,
+      supportedType: type,
+      currentTask: null,
+      status: 'idle',
+      position: { x: 0, y: 0 }
+    });
+  }
+
+  removeWorker(type: 'image' | 'video') {
+    // Try to remove an idle worker first
+    let index = this.workers.findIndex(w => w.supportedType === type && w.status === 'idle');
+    
+    // If no idle worker, force remove one (in real world, we'd wait)
+    if (index === -1) {
+      index = this.workers.findIndex(w => w.supportedType === type);
+    }
+    
+    if (index !== -1) {
+      // If worker had a task, we should probably return it to queue
+      const worker = this.workers[index];
+      if (worker.currentTask) {
+         worker.currentTask.status = 'pending'; // Reset task
+         this.queue.unshift(worker.currentTask); // Put back in front
+      }
+      this.workers.splice(index, 1);
     }
   }
 
