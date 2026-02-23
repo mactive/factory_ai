@@ -15,7 +15,9 @@ export class Renderer {
   pageState = {
     img: 0,
     vid: 0,
-    pageSize: 6 // Workers per page per column
+    client: 0,
+    pageSize: 6, // Workers per page per column
+    clientPageSize: 8 // Clients per page
   };
 
   constructor(containerId: string) {
@@ -86,10 +88,17 @@ export class Renderer {
 
     // Pagination Logic
     const pageIndex = this.pageState[key];
-    const start = pageIndex * this.pageState.pageSize;
+    const totalPages = Math.ceil(workers.length / this.pageState.pageSize);
+
+    // Fix: Clamp page index if out of bounds
+    if (this.pageState[key] >= totalPages && totalPages > 0) {
+      this.pageState[key] = totalPages - 1;
+    }
+    if (totalPages === 0) this.pageState[key] = 0;
+
+    const start = this.pageState[key] * this.pageState.pageSize;
     const end = start + this.pageState.pageSize;
     const visibleWorkers = workers.slice(start, end);
-    const totalPages = Math.ceil(workers.length / this.pageState.pageSize);
 
     // Draw Workers
     visibleWorkers.forEach((worker, index) => {
@@ -103,7 +112,7 @@ export class Renderer {
     }
   }
 
-  drawPaginationControls(x: number, y: number, key: 'img' | 'vid', currentPage: number, totalPages: number) {
+  drawPaginationControls(x: number, y: number, key: string, currentPage: number, totalPages: number) {
     this.ctx.fillStyle = THEME.text.primary;
     this.ctx.font = '12px Arial';
     this.ctx.textAlign = 'center';
@@ -170,6 +179,16 @@ export class Renderer {
     // Next Button at 880 + 160 = 1040
     if (checkClick(1040, 705)) {
       this.pageState.vid++;
+    }
+
+    // Client Column Controls (x=70, y=680)
+    // Prev Button at 70 + 60 = 130
+    if (checkClick(130, 685)) {
+      if (this.pageState.client > 0) this.pageState.client--;
+    }
+    // Next Button at 70 + 160 = 230
+    if (checkClick(230, 685)) {
+      this.pageState.client++;
     }
   }
 
@@ -261,14 +280,29 @@ export class Renderer {
     this.ctx.fillText('Done', 250, legendY + 4);
 
     // Draw clients list
-    clients.forEach((client, i) => {
-      const x = 70;
-      const y = 120 + i * 70; // Increased spacing
+    const totalPages = Math.ceil(clients.length / this.pageState.clientPageSize);
 
-      if (y < 680) { // Adjusted culling for legend space
-        this.drawClientRow(client, x, y);
-      }
+    // Clamp client page
+    if (this.pageState.client >= totalPages && totalPages > 0) {
+      this.pageState.client = totalPages - 1;
+    }
+    if (totalPages === 0) this.pageState.client = 0;
+
+    const start = this.pageState.client * this.pageState.clientPageSize;
+    const end = start + this.pageState.clientPageSize;
+    const visibleClients = clients.slice(start, end);
+
+    visibleClients.forEach((client, i) => {
+      const x = 70;
+      const y = 120 + i * 70;
+
+      this.drawClientRow(client, x, y);
     });
+
+    // Client Pagination Controls (at bottom)
+    if (totalPages > 1) {
+      this.drawPaginationControls(320, 700, 'client', this.pageState.client, totalPages);
+    }
   }
 
   drawClientRow(client: import('../core/Client').ClientEntity, x: number, y: number) {
