@@ -1,12 +1,15 @@
 import { Task, Worker } from '../types';
 import { RiverFactory } from '../core/RiverFactory';
+import { ClientEntity } from '../core/Client';
 import { THEME } from './theme';
+import avatarUrl from '../images/avatar_128.png';
 
 export class Renderer {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   width: number;
   height: number;
+  avatarSprite: HTMLImageElement;
 
   // Pagination State
   pageState = {
@@ -37,6 +40,10 @@ export class Renderer {
 
     this.ctx = this.canvas.getContext('2d')!;
     this.ctx.scale(dpr, dpr); // Scale context to match dpr
+
+    // Load Avatar Sprite
+    this.avatarSprite = new Image();
+    this.avatarSprite.src = avatarUrl;
 
     // Event Listener for Pagination
     this.canvas.addEventListener('click', (e) => this.handlePaginationClick(e));
@@ -129,35 +136,39 @@ export class Renderer {
 
   handlePaginationClick(e: MouseEvent) {
     const rect = this.canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
 
-    // Helper to check click bounds
+    // Fix: We need logical coordinates (CSS pixels) for hit testing, not physical pixels
+    // The drawing logic uses logical coordinates (e.g. 620, 700), but the canvas context is scaled by DPR.
+    // The mouse event gives coordinates relative to the viewport.
+    // rect.left/top are also in CSS pixels.
+    // So we just need relative CSS coordinates.
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Helper to check click bounds with expanded hit area
     const checkClick = (btnX: number, btnY: number) => {
-      return x >= btnX && x <= btnX + 30 && y >= btnY && y <= btnY + 20;
+      // Expanded hit area: +/- 10px around the 30x20 button
+      return x >= btnX - 10 && x <= btnX + 40 && y >= btnY - 10 && y <= btnY + 30;
     };
 
     // IMG Column Controls (x=620, y=700)
-    if (checkClick(680, 705)) { // Prev (620 + 60)
+    // Prev Button at 620 + 60 = 680
+    if (checkClick(680, 705)) {
       if (this.pageState.img > 0) this.pageState.img--;
     }
-    if (checkClick(780, 705)) { // Next (620 + 160)
-      // Need to check max pages, but simplified: allow increment if not empty next page logic handled in draw
-      // Better: re-calculate total pages here or store it.
-      // For robustness, we just increment, draw loop handles bounds? No, need limit.
-      // Let's rely on draw loop not drawing button if invalid, but here we need state.
-      // Actually, let's just clamp it in draw or access a global store? 
-      // We don't have easy access to factory here. 
-      // WORKAROUND: Just increment, draw will clamp display. 
-      // ideally we should pass factory to this handler or store worker counts.
+    // Next Button at 620 + 160 = 780
+    if (checkClick(780, 705)) {
       this.pageState.img++;
     }
 
     // VID Column Controls (x=880, y=700)
-    if (checkClick(940, 705)) { // Prev
+    // Prev Button at 880 + 60 = 940
+    if (checkClick(940, 705)) {
       if (this.pageState.vid > 0) this.pageState.vid--;
     }
-    if (checkClick(1040, 705)) { // Next
+    // Next Button at 880 + 160 = 1040
+    if (checkClick(1040, 705)) {
       this.pageState.vid++;
     }
   }
@@ -269,7 +280,7 @@ export class Renderer {
     // VIP styling (Border)
     if (client.config.hasVip) {
       this.ctx.strokeStyle = THEME.client.vip;
-      this.ctx.lineWidth = 3; // Thicker border for VIP
+      this.ctx.lineWidth = 2; // Thicker border for VIP
     }
 
     this.ctx.fillRect(x, y, 460, 60);
@@ -290,31 +301,48 @@ export class Renderer {
       this.ctx.fillRect(x, y, 5, 60);
     }
 
-    // Client Info (Left)
+    // Draw Avatar (x+10 to x+50)
+    if (this.avatarSprite && this.avatarSprite.complete) {
+      const idx = client.config.avatarIndex;
+      const col = idx % 8;
+      const row = Math.floor(idx / 8);
+      // Source: 128x128, Dest: 40x40
+      this.ctx.drawImage(this.avatarSprite, col * 128, row * 128, 128, 128, x + 15, y + 10, 40, 40);
+    } else {
+      // Fallback placeholder
+      this.ctx.fillStyle = '#ccc';
+      this.ctx.fillRect(x + 15, y + 10, 40, 40);
+    }
+
+    // Client Info (Shifted Right)
     this.ctx.fillStyle = THEME.text.primary;
     this.ctx.font = 'bold 16px Arial';
-    this.ctx.fillText(client.config.id, x + 20, y + 25);
+    this.ctx.fillText(client.config.id, x + 65, y + 25);
 
     // Time Active
     const elapsed = Math.floor((Date.now() - client.createdAt) / 1000);
     this.ctx.fillStyle = THEME.text.secondary;
     this.ctx.font = '11px Arial';
-    this.ctx.fillText(`${elapsed}s`, x + 20, y + 45);
+    this.ctx.fillText(`${elapsed}s`, x + 65, y + 45);
 
     // Priority Badges (Right of Name) - Fixed Overlap
-    let badgeX = x + 100;
+    let badgeX = x + 145; // Shifted right
 
-    // VIP Badge
+    // VIP Badge (Moved to Top Right)
     if (client.config.hasVip) {
       this.ctx.fillStyle = THEME.client.vip;
       this.ctx.beginPath();
-      this.ctx.roundRect(badgeX, y + 20, 35, 20, 4);
+      // Position at top-right corner: x + width - padding, y + padding
+      // Box width 460. Right edge is x + 460.
+      // roundRect radii: [topLeft, topRight, bottomRight, bottomLeft]
+      this.ctx.roundRect(x + 460 - 30, y, 30, 15, [0, 0, 0, 8]);
       this.ctx.fill();
 
       this.ctx.fillStyle = '#fff';
-      this.ctx.font = 'bold 10px Arial';
-      this.ctx.fillText('VIP', badgeX + 8, y + 34);
-      badgeX += 45;
+      this.ctx.font = 'bold 8px Arial'; // Smaller font
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('VIP', x + 460 - 15, y + 10);
+      this.ctx.textAlign = 'left';
     }
 
     // L1/L2 Badge

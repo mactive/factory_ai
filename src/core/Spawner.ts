@@ -48,7 +48,8 @@ export class Spawner {
       priority,
       hasVip,
       budget: Math.floor(Math.random() * 1000) + 100,
-      maxConcurrency: isL2 ? 2 : 1
+      maxConcurrency: isL2 ? 2 : 1,
+      avatarIndex: Math.floor(Math.random() * 64)
     };
 
     return new ClientEntity(config, 0, 0); // Position will be set by main loop

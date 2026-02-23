@@ -8,6 +8,7 @@ export interface ClientConfig {
   hasVip: boolean;
   budget: number;
   maxConcurrency: number;
+  avatarIndex: number;
 }
 
 export interface Task {
