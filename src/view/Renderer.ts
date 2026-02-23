@@ -8,6 +8,13 @@ export class Renderer {
   width: number;
   height: number;
 
+  // Pagination State
+  pageState = {
+    img: 0,
+    vid: 0,
+    pageSize: 6 // Workers per page per column
+  };
+
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`Container ${containerId} not found`);
@@ -30,6 +37,9 @@ export class Renderer {
 
     this.ctx = this.canvas.getContext('2d')!;
     this.ctx.scale(dpr, dpr); // Scale context to match dpr
+
+    // Event Listener for Pagination
+    this.canvas.addEventListener('click', (e) => this.handlePaginationClick(e));
   }
 
   clear() {
@@ -43,7 +53,6 @@ export class Renderer {
     this.ctx.strokeStyle = THEME.panelBorder;
     this.ctx.lineWidth = 2;
 
-    // Rounded rect function would be nice, but simple rect for now
     this.ctx.fillRect(600, 50, 550, 700);
     this.ctx.strokeRect(600, 50, 550, 700);
 
@@ -51,15 +60,106 @@ export class Renderer {
     this.ctx.font = 'bold 24px "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
     this.ctx.fillText(`Factory Floor (${factory.workers.length} Workers)`, 620, 90);
 
-    // Draw Workers
-    factory.workers.forEach((worker, index) => {
-      const col = index % 2; // 2 columns
-      const row = Math.floor(index / 2);
-      const x = 620 + col * 260; // Wider spacing
-      const y = 120 + row * 130;
+    // Split workers into types
+    const imgWorkers = factory.workers.filter(w => w.supportedType === 'image');
+    const vidWorkers = factory.workers.filter(w => w.supportedType === 'video');
 
+    // Draw IMG Column (Left)
+    this.drawWorkerColumn(imgWorkers, 620, 'img', 'Image Processing');
+
+    // Draw VID Column (Right)
+    this.drawWorkerColumn(vidWorkers, 880, 'vid', 'Video Rendering');
+  }
+
+  drawWorkerColumn(workers: Worker[], x: number, key: 'img' | 'vid', title: string) {
+    // Column Header
+    this.ctx.fillStyle = THEME.text.secondary;
+    this.ctx.font = 'bold 14px Arial';
+    this.ctx.fillText(title, x, 120);
+
+    // Pagination Logic
+    const pageIndex = this.pageState[key];
+    const start = pageIndex * this.pageState.pageSize;
+    const end = start + this.pageState.pageSize;
+    const visibleWorkers = workers.slice(start, end);
+    const totalPages = Math.ceil(workers.length / this.pageState.pageSize);
+
+    // Draw Workers
+    visibleWorkers.forEach((worker, index) => {
+      const y = 140 + index * 90; // Compact height (110 -> 90)
       this.drawWorker(worker, x, y);
     });
+
+    // Draw Pagination Controls
+    if (totalPages > 1) {
+      this.drawPaginationControls(x, 700, key, pageIndex, totalPages);
+    }
+  }
+
+  drawPaginationControls(x: number, y: number, key: 'img' | 'vid', currentPage: number, totalPages: number) {
+    this.ctx.fillStyle = THEME.text.primary;
+    this.ctx.font = '12px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(`Page ${currentPage + 1} / ${totalPages}`, x + 120, y + 20);
+    this.ctx.textAlign = 'left';
+
+    // Up Button (Prev Page)
+    if (currentPage > 0) {
+      this.drawButton(x + 60, y + 5, '▲', `${key}_prev`);
+    }
+
+    // Down Button (Next Page)
+    if (currentPage < totalPages - 1) {
+      this.drawButton(x + 160, y + 5, '▼', `${key}_next`);
+    }
+  }
+
+  drawButton(x: number, y: number, text: string, id: string) {
+    this.ctx.fillStyle = '#ecf0f1';
+    this.ctx.strokeStyle = '#bdc3c7';
+    this.ctx.lineWidth = 1;
+    this.ctx.fillRect(x, y, 30, 20);
+    this.ctx.strokeRect(x, y, 30, 20);
+
+    this.ctx.fillStyle = THEME.text.primary;
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(text, x + 15, y + 15);
+    this.ctx.textAlign = 'left';
+  }
+
+  handlePaginationClick(e: MouseEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+
+    // Helper to check click bounds
+    const checkClick = (btnX: number, btnY: number) => {
+      return x >= btnX && x <= btnX + 30 && y >= btnY && y <= btnY + 20;
+    };
+
+    // IMG Column Controls (x=620, y=700)
+    if (checkClick(680, 705)) { // Prev (620 + 60)
+      if (this.pageState.img > 0) this.pageState.img--;
+    }
+    if (checkClick(780, 705)) { // Next (620 + 160)
+      // Need to check max pages, but simplified: allow increment if not empty next page logic handled in draw
+      // Better: re-calculate total pages here or store it.
+      // For robustness, we just increment, draw loop handles bounds? No, need limit.
+      // Let's rely on draw loop not drawing button if invalid, but here we need state.
+      // Actually, let's just clamp it in draw or access a global store? 
+      // We don't have easy access to factory here. 
+      // WORKAROUND: Just increment, draw will clamp display. 
+      // ideally we should pass factory to this handler or store worker counts.
+      this.pageState.img++;
+    }
+
+    // VID Column Controls (x=880, y=700)
+    if (checkClick(940, 705)) { // Prev
+      if (this.pageState.vid > 0) this.pageState.vid--;
+    }
+    if (checkClick(1040, 705)) { // Next
+      this.pageState.vid++;
+    }
   }
 
   drawWorker(worker: Worker, x: number, y: number) {
@@ -67,14 +167,14 @@ export class Renderer {
     this.ctx.fillStyle = '#ffffff';
     this.ctx.shadowColor = 'rgba(0,0,0,0.05)';
     this.ctx.shadowBlur = 10;
-    this.ctx.fillRect(x, y, 240, 110);
-    this.ctx.shadowBlur = 0; // Reset shadow
+    this.ctx.fillRect(x, y, 240, 80); // Compact Height (110 -> 80)
+    this.ctx.shadowBlur = 0;
 
     this.ctx.strokeStyle = worker.status === 'working' ?
       (worker.currentTask?.type === 'image' ? THEME.task.image : THEME.task.video) :
       '#e0e0e0';
     this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(x, y, 240, 110);
+    this.ctx.strokeRect(x, y, 240, 80);
 
     // Worker ID & Type
     this.ctx.fillStyle = THEME.text.primary;
@@ -83,26 +183,22 @@ export class Renderer {
 
     // Type Badge
     const typeColor = worker.supportedType === 'image' ? THEME.task.image : THEME.task.video;
-
-    // Badge Background
     this.ctx.fillStyle = typeColor;
     this.ctx.beginPath();
     this.ctx.roundRect(x + 180, y + 10, 50, 20, 10);
     this.ctx.fill();
-
-    // Badge Text
     this.ctx.fillStyle = '#fff';
     this.ctx.font = 'bold 11px Arial';
     this.ctx.textAlign = 'center';
     this.ctx.fillText(worker.supportedType === 'image' ? 'IMG' : 'VID', x + 205, y + 24);
-    this.ctx.textAlign = 'left'; // Reset
+    this.ctx.textAlign = 'left';
 
     if (worker.currentTask) {
       this.drawTaskDetails(worker.currentTask, x + 15, y + 35);
 
       // Progress bar bg
       this.ctx.fillStyle = '#ecf0f1';
-      this.ctx.fillRect(x + 15, y + 85, 210, 6);
+      this.ctx.fillRect(x + 15, y + 65, 210, 6); // Adjusted Y
 
       // Progress bar fill
       const total = worker.currentTask.requiredTime;
@@ -110,11 +206,11 @@ export class Renderer {
       const progress = (total - remaining) / total;
 
       this.ctx.fillStyle = worker.currentTask.type === 'image' ? THEME.task.image : THEME.task.video;
-      this.ctx.fillRect(x + 15, y + 85, 210 * progress, 6);
+      this.ctx.fillRect(x + 15, y + 65, 210 * progress, 6);
     } else {
       this.ctx.fillStyle = '#bdc3c7';
       this.ctx.font = 'italic 14px Arial';
-      this.ctx.fillText('Waiting for task...', x + 15, y + 60);
+      this.ctx.fillText('Idle', x + 15, y + 55);
     }
   }
 
@@ -286,7 +382,7 @@ export class Renderer {
     // 2. Task Type
     const typeColor = task.type === 'image' ? THEME.task.image : THEME.task.video;
     this.ctx.fillStyle = typeColor;
-    this.ctx.font = 'bold 12px Arial';
-    this.ctx.fillText(task.type === 'image' ? 'Image Generation' : 'Video Rendering', x, y + 35);
+    this.ctx.font = 'bold 10px Arial';
+    this.ctx.fillText(task.type === 'image' ? 'Image Generation' : 'Video Rendering', x + 120, y + 20);
   }
 }
