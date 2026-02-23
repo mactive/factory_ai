@@ -119,12 +119,12 @@ export class Renderer {
     this.ctx.fillText(`Page ${currentPage + 1} / ${totalPages}`, x + 120, y + 20);
     this.ctx.textAlign = 'left';
 
-    // Up Button (Prev Page)
+    // Prev Button
     if (currentPage > 0) {
       this.drawButton(x + 60, y + 5, '▲', `${key}_prev`);
     }
 
-    // Down Button (Next Page)
+    // Next Button
     if (currentPage < totalPages - 1) {
       this.drawButton(x + 160, y + 5, '▼', `${key}_next`);
     }
@@ -181,13 +181,13 @@ export class Renderer {
       this.pageState.vid++;
     }
 
-    // Client Column Controls (x=70, y=680)
-    // Prev Button at 70 + 60 = 130
-    if (checkClick(130, 685)) {
+    // Client Column Controls (Moved to Top Right: x=300, y=85)
+    // Prev Button at 300 + 60 = 360
+    if (checkClick(360, 90)) {
       if (this.pageState.client > 0) this.pageState.client--;
     }
-    // Next Button at 70 + 160 = 230
-    if (checkClick(230, 685)) {
+    // Next Button at 300 + 160 = 460
+    if (checkClick(460, 90)) {
       this.pageState.client++;
     }
   }
@@ -299,9 +299,10 @@ export class Renderer {
       this.drawClientRow(client, x, y);
     });
 
-    // Client Pagination Controls (at bottom)
+    // Client Pagination Controls (Moved to Header, Top Right)
+    // Header is at x=70, y=90. We'll place controls at x=300, y=85 to align with it.
     if (totalPages > 1) {
-      this.drawPaginationControls(320, 700, 'client', this.pageState.client, totalPages);
+      this.drawPaginationControls(300, 85, 'client', this.pageState.client, totalPages);
     }
   }
 

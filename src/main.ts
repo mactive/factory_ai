@@ -70,6 +70,23 @@ controls.innerHTML = `
       <input type="number" id="maxTasks" value="5" min="1" max="20" style="width: 40px; padding: 4px; border: 1px solid #dcdcdc; border-radius: 4px;">
     </div>
   </div>
+
+  <div style="width: 1px; height: 40px; background: #e0e0e0;"></div>
+
+  <!-- Group 4: Completed Stats -->
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <label style="font-weight: bold; font-size: 12px; color: #7f8c8d;">COMPLETED TASKS</label>
+    <div style="display: flex; gap: 15px;">
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="font-size: 12px; font-weight: bold; color: #2ecc71;">IMG:</span>
+        <span id="completedImg" style="font-weight: bold; min-width: 30px;">0</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="font-size: 12px; font-weight: bold; color: #3498db;">VID:</span>
+        <span id="completedVid" style="font-weight: bold; min-width: 30px;">0</span>
+      </div>
+    </div>
+  </div>
 `;
 app?.insertBefore(controls, app.firstChild);
 
@@ -77,6 +94,8 @@ const spawnInput = document.getElementById('spawnRate') as HTMLInputElement;
 const spawnValue = document.getElementById('spawnValue');
 const minTasksInput = document.getElementById('minTasks') as HTMLInputElement;
 const maxTasksInput = document.getElementById('maxTasks') as HTMLInputElement;
+const completedImgSpan = document.getElementById('completedImg');
+const completedVidSpan = document.getElementById('completedVid');
 
 // Worker Controls
 const addImgBtn = document.getElementById('addImgBtn');
@@ -143,6 +162,7 @@ const clients: ClientEntity[] = [];
 let lastTime = 0;
 
 function gameLoop(timestamp: number) {
+  if (lastTime === 0) lastTime = timestamp;
   const deltaTime = timestamp - lastTime;
   lastTime = timestamp;
 
@@ -170,6 +190,10 @@ function gameLoop(timestamp: number) {
       }
     });
   }
+
+  // Update Stats UI
+  if (completedImgSpan) completedImgSpan.textContent = factory.completedImg.toString();
+  if (completedVidSpan) completedVidSpan.textContent = factory.completedVid.toString();
 
   // 2. Update Factory (process queues, workers)
   factory.update(deltaTime);

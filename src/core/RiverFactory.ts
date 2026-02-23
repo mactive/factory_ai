@@ -3,10 +3,14 @@ import { Task, Worker } from '../types';
 export class RiverFactory {
   queue: Task[] = [];
   workers: Worker[] = [];
-  maxConcurrency: number = 20;
+  maxConcurrency: number;
+  
+  // Stats
+  completedImg: number = 0;
+  completedVid: number = 0;
 
-  constructor(workerCount: number = 20) {
-    this.maxConcurrency = workerCount;
+  constructor(maxConcurrency: number = 8) {
+    this.maxConcurrency = maxConcurrency;
     this.initWorkers();
   }
 
@@ -115,6 +119,14 @@ export class RiverFactory {
   completeTask(worker: Worker) {
     if (worker.currentTask) {
       worker.currentTask.status = 'completed';
+      
+      // Update Stats
+      if (worker.currentTask.type === 'image') {
+        this.completedImg++;
+      } else {
+        this.completedVid++;
+      }
+
       // Notify client logic here if needed (usually handled by polling or callback)
       worker.currentTask = null;
       worker.status = 'idle';
