@@ -172,7 +172,7 @@ export class Renderer {
 
     // VIP styling (Border)
     if (client.config.hasVip) {
-      this.ctx.strokeStyle = '#f1c40f';
+      this.ctx.strokeStyle = THEME.client.vip;
       this.ctx.lineWidth = 3; // Thicker border for VIP
     }
 
@@ -210,7 +210,7 @@ export class Renderer {
 
     // VIP Badge
     if (client.config.hasVip) {
-      this.ctx.fillStyle = '#f1c40f';
+      this.ctx.fillStyle = THEME.client.vip;
       this.ctx.beginPath();
       this.ctx.roundRect(badgeX, y + 20, 35, 20, 4);
       this.ctx.fill();

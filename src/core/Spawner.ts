@@ -4,9 +4,16 @@ import { ProductType, Priority } from '../types';
 export class Spawner {
   spawnTimer: number = 0;
   spawnInterval: number = 2000; // Default 2 seconds
+  minTasks: number = 1;
+  maxTasks: number = 5;
 
   setSpawnInterval(interval: number) {
     this.spawnInterval = interval;
+  }
+
+  setTaskRange(min: number, max: number) {
+    this.minTasks = Math.max(1, min);
+    this.maxTasks = Math.max(this.minTasks, max);
   }
 
   update(deltaTime: number): ClientEntity | null {

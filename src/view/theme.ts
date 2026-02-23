@@ -14,8 +14,8 @@ export const THEME = {
   },
   client: {
     bg: '#ecf0f1',
-    vip: '#f1c40f',
-    l2: '#9b59b6', // Purple for L2
+    vip: '#9b59b6',
+    l2: '#959b9f', // Purple for L2
     l1: '#bdc3c7'
   },
   worker: {
