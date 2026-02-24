@@ -6,9 +6,14 @@ export class Spawner {
   spawnInterval: number = 2000; // Default 2 seconds
   minTasks: number = 1;
   maxTasks: number = 5;
+  vipProbability: number = 0.2; // Default 20%
 
   setSpawnInterval(interval: number) {
     this.spawnInterval = interval;
+  }
+
+  setVipProbability(prob: number) {
+    this.vipProbability = Math.max(0, Math.min(1, prob));
   }
 
   setTaskRange(min: number, max: number) {
@@ -40,7 +45,7 @@ export class Spawner {
 
   createRandomClient(): ClientEntity {
     const isL2 = Math.random() > 0.7;
-    const hasVip = Math.random() > 0.8;
+    const hasVip = Math.random() < this.vipProbability;
     const priority: Priority = isL2 ? 'L2' : 'L1';
 
     const config = {

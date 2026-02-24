@@ -73,7 +73,30 @@ controls.innerHTML = `
 
   <div style="width: 1px; height: 40px; background: #e0e0e0;"></div>
 
-  <!-- Group 4: Completed Stats -->
+  <!-- Group 4: Probabilities -->
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <label style="font-weight: bold; font-size: 12px; color: #7f8c8d;">PROBABILITIES</label>
+    <div style="display: flex; gap: 15px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <label style="font-size: 10px; color: #95a5a6;">VIP Chance</label>
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <input type="range" id="vipProb" min="0" max="100" value="20" style="width: 60px;">
+          <span id="vipValue" style="font-size: 11px; font-weight: bold;">20%</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <label style="font-size: 10px; color: #95a5a6;">Video Task</label>
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <input type="range" id="vidProb" min="0" max="100" value="20" style="width: 60px;">
+          <span id="vidValue" style="font-size: 11px; font-weight: bold;">20%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 1px; height: 40px; background: #e0e0e0;"></div>
+
+  <!-- Group 5: Completed Stats -->
   <div style="display: flex; flex-direction: column; gap: 5px;">
     <label style="font-weight: bold; font-size: 12px; color: #7f8c8d;">COMPLETED TASKS</label>
     <div style="display: flex; gap: 15px;">
@@ -94,6 +117,10 @@ const spawnInput = document.getElementById('spawnRate') as HTMLInputElement;
 const spawnValue = document.getElementById('spawnValue');
 const minTasksInput = document.getElementById('minTasks') as HTMLInputElement;
 const maxTasksInput = document.getElementById('maxTasks') as HTMLInputElement;
+const vipProbInput = document.getElementById('vipProb') as HTMLInputElement;
+const vipValueSpan = document.getElementById('vipValue');
+const vidProbInput = document.getElementById('vidProb') as HTMLInputElement;
+const vidValueSpan = document.getElementById('vidValue');
 const completedImgSpan = document.getElementById('completedImg');
 const completedVidSpan = document.getElementById('completedVid');
 
@@ -139,17 +166,35 @@ removeVidBtn?.addEventListener('click', () => {
 minTasksInput?.addEventListener('change', (e) => {
   const val = parseInt((e.target as HTMLInputElement).value);
   spawner.setTaskRange(val, spawner.maxTasks);
+  // Sync max input if it was pushed up by min
+  maxTasksInput.value = spawner.maxTasks.toString();
 });
 
 maxTasksInput?.addEventListener('change', (e) => {
   const val = parseInt((e.target as HTMLInputElement).value);
   spawner.setTaskRange(spawner.minTasks, val);
+  // Sync max input if it was clamped by min
+  maxTasksInput.value = spawner.maxTasks.toString();
 });
 
 spawnInput.addEventListener('input', (e) => {
   const val = parseInt((e.target as HTMLInputElement).value);
   spawner.setSpawnInterval(val);
   if (spawnValue) spawnValue.textContent = `${val}ms`;
+});
+
+let videoTaskProbability = 0.2;
+
+vipProbInput?.addEventListener('input', (e) => {
+  const val = parseInt((e.target as HTMLInputElement).value);
+  spawner.setVipProbability(val / 100);
+  if (vipValueSpan) vipValueSpan.textContent = `${val}%`;
+});
+
+vidProbInput?.addEventListener('input', (e) => {
+  const val = parseInt((e.target as HTMLInputElement).value);
+  videoTaskProbability = val / 100;
+  if (vidValueSpan) vidValueSpan.textContent = `${val}%`;
 });
 
 // Update counts on init
@@ -174,7 +219,7 @@ function gameLoop(timestamp: number) {
     const taskCount = Math.floor(Math.random() * range) + spawner.minTasks;
 
     for (let i = 0; i < taskCount; i++) {
-      const isVideo = Math.random() > 0.8; // 20% video tasks
+      const isVideo = Math.random() < videoTaskProbability;
       const type = isVideo ? 'video' : 'image';
       const duration = isVideo ? 10000 : 2000; // 10s or 2s
 
