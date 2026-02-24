@@ -108,11 +108,11 @@ export class Renderer {
 
     // Draw Pagination Controls
     if (totalPages > 1) {
-      this.drawPaginationControls(x, 700, key, pageIndex, totalPages);
+      this.drawPaginationControls(x, 700, pageIndex, totalPages);
     }
   }
 
-  drawPaginationControls(x: number, y: number, key: string, currentPage: number, totalPages: number) {
+  drawPaginationControls(x: number, y: number, currentPage: number, totalPages: number) {
     this.ctx.fillStyle = THEME.text.primary;
     this.ctx.font = '12px Arial';
     this.ctx.textAlign = 'center';
@@ -121,16 +121,16 @@ export class Renderer {
 
     // Prev Button
     if (currentPage > 0) {
-      this.drawButton(x + 60, y + 5, '▲', `${key}_prev`);
+      this.drawButton(x + 60, y + 5, '▲');
     }
 
     // Next Button
     if (currentPage < totalPages - 1) {
-      this.drawButton(x + 160, y + 5, '▼', `${key}_next`);
+      this.drawButton(x + 160, y + 5, '▼');
     }
   }
 
-  drawButton(x: number, y: number, text: string, id: string) {
+  drawButton(x: number, y: number, text: string) {
     this.ctx.fillStyle = '#ecf0f1';
     this.ctx.strokeStyle = '#bdc3c7';
     this.ctx.lineWidth = 1;
@@ -244,7 +244,7 @@ export class Renderer {
     }
   }
 
-  drawClients(clients: import('../core/Client').ClientEntity[]) {
+  drawClients(clients: ClientEntity[]) {
     // Client List Area
     this.ctx.fillStyle = THEME.panelBg;
     this.ctx.strokeStyle = THEME.panelBorder;
@@ -302,11 +302,11 @@ export class Renderer {
     // Client Pagination Controls (Moved to Header, Top Right)
     // Header is at x=70, y=90. We'll place controls at x=300, y=85 to align with it.
     if (totalPages > 1) {
-      this.drawPaginationControls(300, 85, 'client', this.pageState.client, totalPages);
+      this.drawPaginationControls(300, 85, this.pageState.client, totalPages);
     }
   }
 
-  drawClientRow(client: import('../core/Client').ClientEntity, x: number, y: number) {
+  drawClientRow(client: ClientEntity, x: number, y: number) {
     // Client Card
     this.ctx.fillStyle = '#f8f9fa';
     this.ctx.strokeStyle = '#e9ecef';

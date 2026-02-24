@@ -1,5 +1,5 @@
 import { ClientEntity } from './Client';
-import { ProductType, Priority } from '../types';
+import { Priority } from '../types';
 
 export class Spawner {
   spawnTimer: number = 0;
